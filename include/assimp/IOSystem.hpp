@@ -56,6 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "types.h"
+#include <assimp/Uri.h>
 
 #ifdef _WIN32
 #   include <direct.h>  
@@ -71,7 +72,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Assimp    {
 
-    class IOStream;
+class IOStream;
+class Uri;
 
 // ---------------------------------------------------------------------------
 /** @brief CPP-API: Interface to the file system.
@@ -112,6 +114,7 @@ public:
      *  @see Exists(const char*)
      */
     AI_FORCE_INLINE bool Exists( const std::string& pFile) const;
+    AI_FORCE_INLINE bool Exists( const std::wstring& pFile ) const;
 
     // -------------------------------------------------------------------
     /** @brief Tests for the existence of a file at the given path.
@@ -120,6 +123,7 @@ public:
      * @return true if there is a file with this path, else false.
      */
     virtual bool Exists( const char* pFile) const = 0;
+    virtual bool Exists( const Uri &uri ) const = 0;
 
     // -------------------------------------------------------------------
     /** @brief Returns the system specific directory separator
@@ -145,12 +149,18 @@ public:
     virtual IOStream* Open(const char* pFile,
         const char* pMode = "rb") = 0;
 
+    virtual IOStream *Open( const Uri &uri,
+        const char* pMode = "rb" ) = 0;
+
     // -------------------------------------------------------------------
     /** @brief For backward compatibility
      *  @see Open(const char*, const char*)
      */
     inline IOStream* Open(const std::string& pFile,
         const std::string& pMode = std::string("rb"));
+
+    inline IOStream* Open( const std::wstring& pFile,
+        const std::string& pMode = std::string( "rb" ) );
 
     // -------------------------------------------------------------------
     /** @brief Closes the given file and releases all resources
@@ -188,6 +198,7 @@ public:
      *  @return True, when push was successful, false if path is empty.
      */
     virtual bool PushDirectory( const std::string &path );
+    virtual bool PushDirectory( const std::wstring &path );
 
     // -------------------------------------------------------------------
     /** @brief Returns the top directory from the stack.
@@ -195,6 +206,7 @@ public:
      *          Returns empty when no directory was pushed to the stack.
      */
     virtual const std::string &CurrentDirectory() const;
+    virtual const std::wstring &CurrentDirectory() const;
 
     // -------------------------------------------------------------------
     /** @brief Returns the number of directories stored on the stack.
@@ -217,6 +229,8 @@ public:
      */
     virtual bool CreateDirectory( const std::string &path );
 
+    virtual bool CreateDirectory( const Uri &path );
+
     // -------------------------------------------------------------------
     /** @brief Will change the current directory to the given path.
      *  @param path     [in] The path to change to.
@@ -224,7 +238,11 @@ public:
      */
     virtual bool ChangeDirectory( const std::string &path );
 
+    virtual bool ChangeDirectory( const Uri &path );
+
     virtual bool DeleteFile( const std::string &file );
+
+    virtual bool DeleteFile( const Uri &file );
 
 private:
     std::vector<std::string> m_pathStack;
@@ -256,6 +274,11 @@ IOStream* IOSystem::Open(const std::string& pFile, const std::string& pMode) {
     // For compatibility, interface was changed to const char* to
     // avoid crashes between binary incompatible STL versions
     return Open(pFile.c_str(),pMode.c_str());
+}
+
+AI_FORCE_INLINE
+bool IOSystem::Exists( const std::wstring& pFile ) const {
+    return Exists( Uri( pFile ) );
 }
 
 // ----------------------------------------------------------------------------
@@ -345,6 +368,19 @@ bool IOSystem::ChangeDirectory( const std::string &path ) {
 #endif // _WIN32
 }
 
+AI_FORCE_INLINE
+bool IOSystem::ChangeDirectory( const Uri &path ) {
+    if ( path.Empty() ) {
+        return false;
+    }
+
+#ifdef _WIN32
+    return 0 != ::_wchdir( path.GetAbsolutePath().c_str() );
+#else
+    return 0 != ::chdir( path.GetAbsolutePath().c_str() );
+#endif // _WIN32
+}
+
 
 // ----------------------------------------------------------------------------
 AI_FORCE_INLINE
@@ -355,6 +391,18 @@ bool IOSystem::DeleteFile( const std::string &file ) {
     const int retCode( ::remove( file.c_str() ) );
     return ( 0 == retCode );
 }
+
+// ----------------------------------------------------------------------------
+AI_FORCE_INLINE
+bool IOSystem::DeleteFile( const Uri &file ) {
+    if ( file.Empty() ) {
+        return false;
+    }
+
+    const int retCode( ::_wremove( file.GetAbsolutePath().c_str() ) );
+    return  ( 0 == retCode );
+}
+
 } //!ns Assimp
 
 #endif //AI_IOSYSTEM_H_INC

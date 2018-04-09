@@ -154,6 +154,7 @@ SET( Logging_SRCS
 SOURCE_GROUP(Logging FILES ${Logging_SRCS})
 
 SET( Common_SRCS
+  Common/Uri.cpp
   BaseImporter.cpp
   BaseProcess.cpp
   BaseProcess.h

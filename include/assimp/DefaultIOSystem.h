@@ -56,6 +56,7 @@ public:
     // -------------------------------------------------------------------
     /** Tests for the existence of a file at the given path. */
     bool Exists( const char* pFile) const;
+    bool Exists( const Uri &uri) const;
 
     // -------------------------------------------------------------------
     /** Returns the directory separator. */
@@ -64,6 +65,7 @@ public:
     // -------------------------------------------------------------------
     /** Open a new file with a given path. */
     IOStream* Open( const char* pFile, const char* pMode = "rb");
+    IOStream* Open( const Uri &uri, const char* pMode = "rb" );
 
     // -------------------------------------------------------------------
     /** Closes the given file and releases all resources associated with it. */
